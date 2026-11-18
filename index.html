@@ -53,8 +53,13 @@
           <button type="button" class="tab" data-tab="sla" aria-pressed="false">SLA</button>
         </div>
         <div id="tab-biz" class="panel">
+          <div class="actions">
+            <a class="ghost" href="load-script-prompt.txt" download="压测脚本prompt.txt">下载压测脚本 prompt</a>
+            <label class="file">导入脚本<input id="script-file" type="file" accept=".js,.txt"></label>
+          </div>
+          <p class="note" id="script-msg">生成脚本只需要提供接口：方法和路径。有请求体或请求头时写在这个接口上。地址、并发、时长和 testRunId 由平台在执行时注入。</p>
           <h2>业务会话 · 提交订单</h2>
-          <p class="note">同一业务会话里的 API 按顺序发出。多个业务会话同时发出。</p>
+          <p class="note">同一业务会话里的 API 按顺序发出。多个业务会话同时发出。也可以导入按本平台 prompt 生成的脚本。</p>
           <table>
             <thead><tr><th>顺序</th><th>API</th><th>方法</th><th>URL</th><th>检查点</th></tr></thead>
             <tbody>
@@ -512,6 +517,12 @@
     show("running");
   }
 
+  root.querySelector("#script-file").addEventListener("change", function () {
+    var file = this.files && this.files[0];
+    root.querySelector("#script-msg").textContent = file
+      ? "已导入 " + file.name + "。执行时由平台注入地址、并发、时长和 testRunId。"
+      : "生成脚本只需要提供接口：方法和路径。有请求体或请求头时写在这个接口上。地址、并发、时长和 testRunId 由平台在执行时注入。";
+  });
   root.querySelector("#debug").addEventListener("click", function () {
     msg("create-error", "");
     msg("debug-ok", "调试通过。登录返回 200，提交订单断言成功。");
@@ -623,6 +634,9 @@ th { font-weight: 500; }
 .fields { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .wide { grid-column: 1 / -1; }
 label, .pick { display: flex; flex-direction: column; gap: 4px; }
+a.ghost, label.file { align-items: center; background: transparent; border: 1px solid light-dark(#c8ced6, #4a5160); border-radius: 4px; color: inherit; display: inline-flex; font: inherit; min-height: 32px; padding: 6px 14px; text-decoration: none; width: auto; }
+label.file { cursor: pointer; flex-direction: row; }
+label.file input { border: 0; height: 1px; margin: 0; min-height: 0; opacity: 0; padding: 0; position: absolute; width: 1px; }
 .line { max-width: 360px; margin-bottom: 8px; }
 .pick { align-items: center; flex-direction: row; gap: 8px; min-height: 32px; }
 input, select { background: light-dark(#fff, #16181c); border: 1px solid light-dark(#c8ced6, #4a5160); border-radius: 4px; color: inherit; font: inherit; min-height: 32px; padding: 4px 8px; width: 100%; }
