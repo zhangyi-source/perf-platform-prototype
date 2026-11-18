@@ -85,12 +85,11 @@
         </div>
         <div id="tab-adv" class="panel" hidden>
           <div class="fields">
-            <label>日志采样率<input value="1%"></label>
-            <label>关注服务<input value="入口、订单、库存"></label>
-            <label>应用监控<input value="SkyWalking" readonly></label>
-            <label>基础设施<input value="Prometheus" readonly></label>
+            <label>请求采样率<input value="1%"></label>
+            <label>观测来源<input value="施压端 + 已有 Prometheus" readonly></label>
+            <label>对齐方式<input value="任务起止时间" readonly></label>
           </div>
-          <p class="note">采样率高于 1% 时，计费 VUM 按（1 + 采样率）增加。默认 1% 不加。</p>
+          <p class="note">业务进程不挂 Agent。实时页和报告直接读施压端指标，并按这一轮的起止时间读取环境里已经在采的 Prometheus。</p>
         </div>
         <div id="tab-sla" class="panel" hidden>
           <table>
@@ -142,7 +141,7 @@
           <div><span>TPS 当前</span><strong>1,860</strong></div>
           <div><span>并发 当前 / 最大</span><strong>200 / 1,000</strong></div>
           <div><span>异常数</span><strong>12</strong></div>
-          <div><span>实时 VUM</span><strong>2,000</strong></div>
+          <div><span>等待首字节</span><strong>168 ms</strong></div>
         </div>
         <h2>业务会话</h2>
         <table>
@@ -152,13 +151,16 @@
             <tr><td>提交订单</td><td class="num">248 ms</td><td class="num">99.4%</td><td class="num">160</td></tr>
           </tbody>
         </table>
-        <h2>关注服务</h2>
+        <h2>运行资源</h2>
+        <p class="note">与上面同一时间窗，来自已有 Prometheus。业务进程没有 Agent。</p>
         <table>
-          <thead><tr><th>服务</th><th>吞吐量 / 分钟</th><th>平均耗时</th><th>错误率</th></tr></thead>
+          <thead><tr><th>对象</th><th>当前</th><th>来源</th></tr></thead>
           <tbody>
-            <tr><td>入口</td><td class="num">108,000</td><td class="num">86 ms</td><td class="num">0.2%</td></tr>
-            <tr><td>订单</td><td class="num">42,000</td><td class="num">210 ms</td><td class="num">0.4%</td></tr>
-            <tr><td>库存</td><td class="num">42,000</td><td class="num">64 ms</td><td class="num">0.1%</td></tr>
+            <tr><td>订单 Pod CPU</td><td class="num">62%</td><td>Prometheus</td></tr>
+            <tr><td>订单 Pod 内存</td><td class="num">71%</td><td>Prometheus</td></tr>
+            <tr><td>订单库连接池</td><td class="num">81%</td><td>Prometheus</td></tr>
+            <tr><td>数据库活跃连接</td><td class="num">140</td><td>Prometheus</td></tr>
+            <tr><td>Redis 命中率</td><td class="num">99.2%</td><td>Prometheus</td></tr>
           </tbody>
         </table>
         <div class="tune">
@@ -225,7 +227,18 @@
                 <tr><td>P95</td><td class="num">640 ms</td><td>小于 500 ms</td><td>未通过</td></tr>
               </tbody>
             </table>
-            <p class="note" id="d-trace">变慢最多的服务是订单。采样 Trace tid-7c2a91，testRunId=run-20261118-01。</p>
+            <h2>同一时间窗的资源</h2>
+            <table>
+              <thead><tr><th>对象</th><th>本轮</th><th>来源</th></tr></thead>
+              <tbody>
+                <tr><td>订单 Pod CPU</td><td class="num" data-prom="cpu">62%</td><td>Prometheus</td></tr>
+                <tr><td>订单 Pod 内存</td><td class="num" data-prom="mem">71%</td><td>Prometheus</td></tr>
+                <tr><td>订单库连接池</td><td class="num" data-prom="pool">81%</td><td>Prometheus</td></tr>
+                <tr><td>数据库活跃连接</td><td class="num" data-prom="db">140</td><td>Prometheus</td></tr>
+                <tr><td>Redis 命中率</td><td class="num" data-prom="redis">99.2%</td><td>Prometheus</td></tr>
+              </tbody>
+            </table>
+            <p class="note" id="d-trace">P95 未通过。等待首字节偏高。同一时间窗内订单库连接池 81%，Pod CPU 62%。testRunId=run-20261118-01。</p>
           </div>
           <div id="rtab-agent" class="panel" hidden>
             <table>
@@ -519,6 +532,19 @@
     var n = Number(root.querySelector("#tune").value);
     root.querySelector("#tune-msg").textContent = n > 0 ? "已切到手动调速，当前并发 " + n.toLocaleString("zh-CN") + "。" : "调速值要大于 0。";
   });
+  function setProm(kind) {
+    var pass = kind === "pass";
+    var values = pass
+      ? { cpu: "28%", mem: "41%", pool: "35%", db: "40", redis: "99.6%" }
+      : { cpu: "62%", mem: "71%", pool: "81%", db: "140", redis: "99.2%" };
+    Object.keys(values).forEach(function (key) {
+      root.querySelector("[data-prom='" + key + "']").textContent = values[key];
+    });
+    root.querySelector("#d-trace").textContent = pass
+      ? "列表查询未突破 SLA。同一时间窗内 CPU 和连接池都在水位以下。testRunId=run-20261117-06。"
+      : "P95 未通过。等待首字节偏高。同一时间窗内订单库连接池 81%，Pod CPU 62%。testRunId=run-20261118-01。";
+  }
+
   root.querySelector("#stop").addEventListener("click", function () {
     running = false;
     agents.forEach(function (a) { if (a.status === "占用") a.status = "空闲"; });
@@ -527,6 +553,12 @@
     root.querySelector("#report-list").hidden = true;
     root.querySelector("#report-detail").hidden = false;
     root.querySelector("#detail-title").textContent = "本轮报告 · 未通过";
+    root.querySelector("#d-ok").textContent = "99.4%";
+    root.querySelector("#d-rt").textContent = "248 ms";
+    root.querySelector("#d-tps").textContent = "1,740 / 1,920";
+    root.querySelector("#d-sla").children[1].children[1].textContent = "640 ms";
+    root.querySelector("#d-sla").children[1].children[3].textContent = "未通过";
+    setProm("fail");
   });
   root.querySelector("#open-report").addEventListener("click", function () {
     root.querySelector("#report-list").hidden = true;
@@ -537,7 +569,7 @@
     root.querySelector("#d-tps").textContent = "1,740 / 1,920";
     root.querySelector("#d-sla").children[1].children[1].textContent = "640 ms";
     root.querySelector("#d-sla").children[1].children[3].textContent = "未通过";
-    root.querySelector("#d-trace").textContent = "变慢最多的服务是订单。采样 Trace tid-7c2a91，testRunId=run-20261118-01。";
+    setProm("fail");
   });
   root.querySelector("#open-pass").addEventListener("click", function () {
     root.querySelector("#report-list").hidden = true;
@@ -548,7 +580,7 @@
     root.querySelector("#d-tps").textContent = "420 / 460";
     root.querySelector("#d-sla").children[1].children[1].textContent = "320 ms";
     root.querySelector("#d-sla").children[1].children[3].textContent = "通过";
-    root.querySelector("#d-trace").textContent = "列表查询未突破 SLA。采样 Trace tid-11ab02。";
+    setProm("pass");
   });
   root.querySelector("#back-reports").addEventListener("click", function () {
     root.querySelector("#report-detail").hidden = true;
