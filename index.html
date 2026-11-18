@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>性能专项测试平台原型</title>
+</head>
+<body style="margin:0">
+<div id="perf-proto">
+  <p class="vis-sr-only">性能专项测试平台。可在场景、压力机、任务、实时和报告之间切换，并手工登记压力机后发起一轮压测。</p>
+  <div class="shell">
+    <header class="top">
+      <div class="brand">性能专项测试平台</div>
+      <nav class="nav" aria-label="平台页面">
+        <button type="button" class="nav-btn" data-screen="scenario" aria-pressed="false">场景</button>
+        <button type="button" class="nav-btn" data-screen="agent" aria-pressed="true">压力机</button>
+        <button type="button" class="nav-btn" data-screen="task" aria-pressed="false">任务</button>
+        <button type="button" class="nav-btn" data-screen="live" aria-pressed="false">实时</button>
+        <button type="button" class="nav-btn" data-screen="report" aria-pressed="false">报告</button>
+      </nav>
+    </header>
+
+    <section id="screen-scenario" class="screen" hidden>
+      <h2>场景</h2>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>名称</th>
+            <th>环境</th>
+            <th>压力模型</th>
+            <th>关注服务</th>
+            <th>脚本</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>下单接口-阶梯</td>
+            <td>测试</td>
+            <td>阶梯加压</td>
+            <td>入口、订单、库存</td>
+            <td>order-step.js</td>
+          </tr>
+          <tr>
+            <td>列表查询-固定并发</td>
+            <td>测试</td>
+            <td>固定并发</td>
+            <td>入口、列表</td>
+            <td>list-constant.js</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note">阈值写在场景上。下单接口的客户端通过线是错误率小于 1%，P95 小于 500ms，实际 RPS 不低于目标的 95%。</p>
+    </section>
+
+    <section id="screen-agent" class="screen">
+      <h2>压力机</h2>
+      <p class="note">机器由手工填写。保存后用地址和凭证做连通检查，通过才标成空闲。</p>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>名称</th>
+            <th>地址</th>
+            <th>环境</th>
+            <th>规格</th>
+            <th>最大并发</th>
+            <th>状态</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="agent-body">
+          <tr data-agent="a1">
+            <td>测试环境-压测机-01</td>
+            <td>10.8.1.21</td>
+            <td>测试</td>
+            <td>8 核 16 GB</td>
+            <td class="num">500</td>
+            <td class="agent-status">空闲</td>
+            <td><button type="button" class="text-btn stop-agent" data-agent="a1">停用</button></td>
+          </tr>
+          <tr data-agent="a2">
+            <td>测试环境-压测机-02</td>
+            <td>10.8.1.22</td>
+            <td>测试</td>
+            <td>8 核 16 GB</td>
+            <td class="num">500</td>
+            <td class="agent-status">空闲</td>
+            <td><button type="button" class="text-btn stop-agent" data-agent="a2">停用</button></td>
+          </tr>
+          <tr data-agent="a3">
+            <td>预发-压测机-01</td>
+            <td>10.8.2.21</td>
+            <td>预发</td>
+            <td>16 核 32 GB</td>
+            <td class="num">1000</td>
+            <td class="agent-status">停用</td>
+            <td><button type="button" class="text-btn stop-agent" data-agent="a3" disabled>已停用</button></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <form id="agent-form" class="form">
+        <h3>登记一台压力机</h3>
+        <div class="fields">
+          <label>名称<input name="name" required autocomplete="off" placeholder="测试环境-压测机-03"></label>
+          <label>地址<input name="address" required autocomplete="off" placeholder="10.8.1.23"></label>
+          <label>端口<input name="port" inputmode="numeric" value="22"></label>
+          <label>登录用户<input name="user" required autocomplete="off" placeholder="loadrunner"></label>
+          <label>登录凭证<input name="secret" type="password" required autocomplete="off" placeholder="私钥或密码"></label>
+          <label>所属环境
+            <select name="env">
+              <option>测试</option>
+              <option>预发</option>
+            </select>
+          </label>
+          <label>网络
+            <select name="net">
+              <option>内网</option>
+              <option>公网</option>
+            </select>
+          </label>
+          <label>CPU 核数<input name="cpu" inputmode="numeric" value="8"></label>
+          <label>内存 GB<input name="mem" inputmode="numeric" value="16"></label>
+          <label>单机最大并发<input name="vu" inputmode="numeric" value="500"></label>
+          <label>单机最大 RPS<input name="rps" inputmode="numeric" value="3000"></label>
+          <label>带宽<input name="bw" placeholder="100 Mb/s" value="100 Mb/s"></label>
+          <label class="wide">备注<input name="note" placeholder="负责人、机器来源"></label>
+        </div>
+        <p id="agent-error" class="error" hidden></p>
+        <p id="agent-saved" class="ok" hidden>已保存。连通检查通过，状态为空闲。</p>
+        <button type="submit" class="primary">保存</button>
+      </form>
+    </section>
+
+    <section id="screen-task" class="screen" hidden>
+      <h2>发起任务</h2>
+      <form id="task-form" class="form">
+        <div class="fields">
+          <label>场景
+            <select name="scenario" id="task-scenario">
+              <option value="order">下单接口-阶梯</option>
+              <option value="list">列表查询-固定并发</option>
+            </select>
+          </label>
+          <label>环境
+            <select name="env" id="task-env">
+              <option>测试</option>
+              <option>预发</option>
+            </select>
+          </label>
+          <label>压力模型<input id="task-model" value="阶梯加压" readonly></label>
+          <label>时长（分钟）<input name="minutes" inputmode="numeric" value="10"></label>
+        </div>
+        <fieldset>
+          <legend>勾选压力机</legend>
+          <div id="machine-picks"></div>
+        </fieldset>
+        <p class="note" id="split-note">当前勾选合计最大并发 500。任务会按各机器填写的最大并发切分 VU。</p>
+        <p id="task-error" class="error" hidden></p>
+        <button type="submit" class="primary">发起压测</button>
+      </form>
+    </section>
+
+    <section id="screen-live" class="screen" hidden>
+      <h2>实时</h2>
+      <p class="note" id="live-caption">下单接口-阶梯 · 测试 · 执行中 · 已运行 4 分钟</p>
+      <div class="metrics" aria-label="客户端指标">
+        <div><span>当前 VU</span><strong id="live-vu">200</strong></div>
+        <div><span>实际 RPS</span><strong id="live-rps">1,860</strong></div>
+        <div><span>错误率</span><strong id="live-err">0.4%</strong></div>
+        <div><span>P95</span><strong id="live-p95">420 ms</strong></div>
+      </div>
+      <table class="grid">
+        <caption>关注服务</caption>
+        <thead>
+          <tr><th>服务</th><th>吞吐量 / 分钟</th><th>平均耗时</th><th>错误率</th></tr>
+        </thead>
+        <tbody id="live-services">
+          <tr><td>入口</td><td class="num">108,000</td><td class="num">86 ms</td><td class="num">0.2%</td></tr>
+          <tr><td>订单</td><td class="num">42,000</td><td class="num">210 ms</td><td class="num">0.4%</td></tr>
+          <tr><td>库存</td><td class="num">42,000</td><td class="num">64 ms</td><td class="num">0.1%</td></tr>
+        </tbody>
+      </table>
+      <p class="note" id="live-agents">占用压力机：测试环境-压测机-01</p>
+      <button type="button" class="primary" id="finish-run">结束并出报告</button>
+    </section>
+
+    <section id="screen-report" class="screen" hidden>
+      <h2>报告</h2>
+      <p id="report-title" class="verdict fail">未通过</p>
+      <p class="note" id="report-meta">下单接口-阶梯 · 测试 · 10 分钟阶梯 · 客户端 P95 高于 500 ms</p>
+      <table class="grid">
+        <thead>
+          <tr><th>指标</th><th>实际</th><th>门槛</th><th>结果</th></tr>
+        </thead>
+        <tbody id="report-body">
+          <tr><td>错误率</td><td class="num">0.6%</td><td>小于 1%</td><td>通过</td></tr>
+          <tr><td>P95</td><td class="num">640 ms</td><td>小于 500 ms</td><td>未通过</td></tr>
+          <tr><td>实际 RPS</td><td class="num">1,920</td><td>不低于目标的 95%</td><td>通过</td></tr>
+        </tbody>
+      </table>
+      <p class="note" id="report-slow">变慢最多的服务是订单。慢 Trace：<span class="mono">tid-7c2a91</span>，关联字段 testRunId=run-20261118-01。</p>
+      <p class="note" id="report-agents">本轮压力机：测试环境-压测机-01（10.8.1.21）</p>
+    </section>
+  </div>
+</div>
+<script>
+(function () {
+  var root = document.getElementById("perf-proto");
+  var screens = ["scenario", "agent", "task", "live", "report"];
+  var agents = [
+    { id: "a1", name: "测试环境-压测机-01", address: "10.8.1.21", env: "测试", spec: "8 核 16 GB", vu: 500, status: "空闲" },
+    { id: "a2", name: "测试环境-压测机-02", address: "10.8.1.22", env: "测试", spec: "8 核 16 GB", vu: 500, status: "空闲" },
+    { id: "a3", name: "预发-压测机-01", address: "10.8.2.21", env: "预发", spec: "16 核 32 GB", vu: 1000, status: "停用" }
+  ];
+  var seq = 4;
+  var currentRun = null;
+
+  function show(name) {
+    screens.forEach(function (id) {
+      var section = root.querySelector("#screen-" + id);
+      var btn = root.querySelector('.nav-btn[data-screen="' + id + '"]');
+      var on = id === name;
+      section.hidden = !on;
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+  }
+
+  root.querySelectorAll(".nav-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () { show(btn.getAttribute("data-screen")); });
+  });
+
+  function setMsg(id, text) {
+    var el = root.querySelector("#" + id);
+    el.hidden = !text;
+    el.textContent = text || "";
+  }
+
+  function renderPicks() {
+    var env = root.querySelector("#task-env").value;
+    var box = root.querySelector("#machine-picks");
+    box.replaceChildren();
+    var available = agents.filter(function (a) { return a.env === env && a.status === "空闲"; });
+    if (!available.length) {
+      var empty = document.createElement("p");
+      empty.className = "note";
+      empty.textContent = "这个环境没有空闲压力机。到压力机页登记或恢复一台。";
+      box.appendChild(empty);
+    }
+    available.forEach(function (a, index) {
+      var label = document.createElement("label");
+      label.className = "pick";
+      var input = document.createElement("input");
+      input.type = "checkbox";
+      input.value = a.id;
+      input.checked = index === 0;
+      input.addEventListener("change", updateSplit);
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(a.name + " · " + a.address + " · 最大并发 " + a.vu));
+      box.appendChild(label);
+    });
+    updateSplit();
+  }
+
+  function selectedAgents() {
+    return Array.prototype.map.call(root.querySelectorAll("#machine-picks input:checked"), function (input) {
+      return agents.find(function (a) { return a.id === input.value; });
+    }).filter(Boolean);
+  }
+
+  function updateSplit() {
+    var picked = selectedAgents();
+    var sum = picked.reduce(function (n, a) { return n + a.vu; }, 0);
+    var note = root.querySelector("#split-note");
+    note.textContent = picked.length
+      ? "当前勾选 " + picked.length + " 台，合计最大并发 " + sum.toLocaleString("zh-CN") + "。任务按各机器填写的最大并发切分 VU。"
+      : "还没有勾选压力机。";
+  }
+
+  function statusCell(tr) {
+    return tr.querySelector(".agent-status");
+  }
+
+  function syncTableStatus() {
+    agents.forEach(function (a) {
+      var tr = root.querySelector('#agent-body tr[data-agent="' + a.id + '"]');
+      if (!tr) return;
+      statusCell(tr).textContent = a.status;
+      var btn = tr.querySelector(".stop-agent");
+      var stopped = a.status === "停用";
+      btn.disabled = stopped;
+      btn.textContent = stopped ? "已停用" : "停用";
+    });
+  }
+
+  root.querySelector("#agent-body").addEventListener("click", function (event) {
+    var btn = event.target.closest(".stop-agent");
+    if (!btn || btn.disabled) return;
+    var agent = agents.find(function (a) { return a.id === btn.getAttribute("data-agent"); });
+    if (!agent || agent.status === "占用") {
+      setMsg("agent-error", "这台压力机正在任务中，结束后才能停用。");
+      return;
+    }
+    agent.status = "停用";
+    syncTableStatus();
+    renderPicks();
+    setMsg("agent-error", "");
+  });
+
+  root.querySelector("#agent-form").addEventListener("submit", function (event) {
+    event.preventDefault();
+    var data = new FormData(event.currentTarget);
+    var name = String(data.get("name") || "").trim();
+    var address = String(data.get("address") || "").trim();
+    var user = String(data.get("user") || "").trim();
+    var secret = String(data.get("secret") || "").trim();
+    var vu = Number(data.get("vu"));
+    if (!name || !address || !user || !secret) {
+      setMsg("agent-saved", "");
+      setMsg("agent-error", "名称、地址、登录用户和登录凭证都要填写。");
+      return;
+    }
+    if (!/^[\w.-]+$/.test(address)) {
+      setMsg("agent-saved", "");
+      setMsg("agent-error", "地址需要是 IP 或主机名。");
+      return;
+    }
+    if (!Number.isFinite(vu) || vu <= 0) {
+      setMsg("agent-saved", "");
+      setMsg("agent-error", "单机最大并发要大于 0。");
+      return;
+    }
+    var id = "a" + seq++;
+    var cpu = String(data.get("cpu") || "").trim();
+    var mem = String(data.get("mem") || "").trim();
+    var agent = {
+      id: id,
+      name: name,
+      address: address,
+      env: String(data.get("env")),
+      spec: cpu + " 核 " + mem + " GB",
+      vu: vu,
+      status: "空闲"
+    };
+    agents.push(agent);
+    var tr = document.createElement("tr");
+    tr.setAttribute("data-agent", id);
+    [name, address, agent.env, agent.spec].forEach(function (text) {
+      var td = document.createElement("td");
+      td.textContent = text;
+      tr.appendChild(td);
+    });
+    var vuTd = document.createElement("td");
+    vuTd.className = "num";
+    vuTd.textContent = String(vu);
+    tr.appendChild(vuTd);
+    var st = document.createElement("td");
+    st.className = "agent-status";
+    st.textContent = "空闲";
+    tr.appendChild(st);
+    var action = document.createElement("td");
+    var stop = document.createElement("button");
+    stop.type = "button";
+    stop.className = "text-btn stop-agent";
+    stop.setAttribute("data-agent", id);
+    stop.textContent = "停用";
+    action.appendChild(stop);
+    tr.appendChild(action);
+    root.querySelector("#agent-body").appendChild(tr);
+    event.currentTarget.reset();
+    event.currentTarget.elements.port.value = "22";
+    event.currentTarget.elements.cpu.value = "8";
+    event.currentTarget.elements.mem.value = "16";
+    event.currentTarget.elements.vu.value = "500";
+    event.currentTarget.elements.rps.value = "3000";
+    event.currentTarget.elements.bw.value = "100 Mb/s";
+    setMsg("agent-error", "");
+    setMsg("agent-saved", "已保存。连通检查通过，状态为空闲。");
+    renderPicks();
+  });
+
+  ["name", "address", "user", "secret", "vu"].forEach(function (field) {
+    root.querySelector("#agent-form").elements[field].addEventListener("input", function () {
+      setMsg("agent-error", "");
+    });
+  });
+
+  var models = { order: "阶梯加压", list: "固定并发" };
+  root.querySelector("#task-scenario").addEventListener("change", function (event) {
+    root.querySelector("#task-model").value = models[event.target.value];
+  });
+  root.querySelector("#task-env").addEventListener("change", renderPicks);
+
+  root.querySelector("#task-form").addEventListener("submit", function (event) {
+    event.preventDefault();
+    var picked = selectedAgents();
+    if (!picked.length) {
+      setMsg("task-error", "先勾选至少一台当前环境的空闲压力机。");
+      return;
+    }
+    var minutes = Number(new FormData(event.currentTarget).get("minutes"));
+    if (!Number.isFinite(minutes) || minutes <= 0) {
+      setMsg("task-error", "时长要大于 0 分钟。");
+      return;
+    }
+    setMsg("task-error", "");
+    agents.forEach(function (a) {
+      if (picked.some(function (p) { return p.id === a.id; })) a.status = "占用";
+    });
+    syncTableStatus();
+    currentRun = {
+      scenario: root.querySelector("#task-scenario").selectedOptions[0].textContent,
+      model: root.querySelector("#task-model").value,
+      env: root.querySelector("#task-env").value,
+      minutes: minutes,
+      agents: picked.map(function (a) { return a.name + "（" + a.address + "）"; })
+    };
+    root.querySelector("#live-caption").textContent = currentRun.scenario + " · " + currentRun.env + " · 执行中 · 计划 " + minutes + " 分钟";
+    root.querySelector("#live-vu").textContent = "200";
+    root.querySelector("#live-rps").textContent = "1,860";
+    root.querySelector("#live-err").textContent = "0.4%";
+    root.querySelector("#live-p95").textContent = "420 ms";
+    root.querySelector("#live-agents").textContent = "占用压力机：" + picked.map(function (a) { return a.name; }).join("、");
+    renderPicks();
+    show("live");
+  });
+
+  root.querySelector("#finish-run").addEventListener("click", function () {
+    var run = currentRun || {
+      scenario: "下单接口-阶梯",
+      model: "阶梯加压",
+      env: "测试",
+      minutes: 10,
+      agents: ["测试环境-压测机-01（10.8.1.21）"]
+    };
+    agents.forEach(function (a) {
+      if (a.status === "占用") a.status = "空闲";
+    });
+    syncTableStatus();
+    renderPicks();
+    var verdict = root.querySelector("#report-title");
+    verdict.textContent = "未通过";
+    verdict.className = "verdict fail";
+    root.querySelector("#report-meta").textContent = run.scenario + " · " + run.env + " · " + run.minutes + " 分钟" + run.model + " · 客户端 P95 高于 500 ms";
+    root.querySelector("#report-agents").textContent = "本轮压力机：" + run.agents.join("、");
+    root.querySelector("#live-caption").textContent = run.scenario + " · 已结束 · 报告已生成";
+    root.querySelector("#live-agents").textContent = "压力机已释放：" + run.agents.map(function (name) { return name.split("（")[0]; }).join("、");
+    show("report");
+  });
+
+  renderPicks();
+})();
+</script>
+<style>
+#perf-proto {
+  color: light-dark(#1a1d23, #f2f3f5);
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+#perf-proto .shell {
+  background: light-dark(#f3f4f6, #17191d);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+#perf-proto .top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+  justify-content: space-between;
+}
+#perf-proto .brand {
+  font-weight: 500;
+}
+#perf-proto .nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+#perf-proto .nav-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: inherit;
+  font: inherit;
+  min-height: 32px;
+  padding: 4px 10px;
+}
+#perf-proto .nav-btn[aria-pressed="true"] {
+  background: light-dark(#ffffff, #25282e);
+  border-color: light-dark(#d5d8de, #3a3f48);
+}
+#perf-proto h2, #perf-proto h3 {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+}
+#perf-proto .screen {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+#perf-proto .note {
+  color: light-dark(#3e4752, #c5ccd4);
+  margin: 0;
+}
+#perf-proto .grid {
+  background: light-dark(#ffffff, #25282e);
+  border-collapse: collapse;
+  width: 100%;
+}
+#perf-proto .grid caption {
+  caption-side: top;
+  font-weight: 500;
+  padding: 0 0 8px;
+  text-align: left;
+}
+#perf-proto .grid th, #perf-proto .grid td {
+  border-bottom: 1px solid light-dark(#e2e5ea, #3a3f48);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+#perf-proto .grid th {
+  font-weight: 500;
+}
+#perf-proto .num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+#perf-proto .form {
+  background: light-dark(#ffffff, #25282e);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+#perf-proto .fields {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+#perf-proto .wide {
+  grid-column: 1 / -1;
+}
+#perf-proto label, #perf-proto .pick {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+#perf-proto .pick {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+#perf-proto fieldset {
+  border: 1px solid light-dark(#e2e5ea, #3a3f48);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 8px 10px;
+}
+#perf-proto legend {
+  padding: 0 4px;
+}
+#perf-proto input, #perf-proto select {
+  background: light-dark(#ffffff, #17191d);
+  border: 1px solid light-dark(#c8ced6, #4a5160);
+  border-radius: 4px;
+  color: inherit;
+  font: inherit;
+  min-height: 32px;
+  padding: 4px 8px;
+  width: 100%;
+}
+#perf-proto button.primary, #perf-proto button.text-btn {
+  font: inherit;
+  min-height: 32px;
+}
+#perf-proto button.primary {
+  align-self: flex-start;
+  background: light-dark(#1d4f91, #8eb4e8);
+  border: 0;
+  border-radius: 4px;
+  color: light-dark(#ffffff, #102033);
+  padding: 6px 12px;
+}
+#perf-proto button.text-btn {
+  background: transparent;
+  border: 0;
+  color: light-dark(#1d4f91, #8eb4e8);
+  padding: 0;
+}
+#perf-proto button:disabled {
+  color: light-dark(#6b7380, #8b939e);
+}
+#perf-proto .error, #perf-proto .ok {
+  margin: 0;
+}
+#perf-proto .error {
+  color: light-dark(#8f1d1d, #f0b4b4);
+}
+#perf-proto .ok {
+  color: light-dark(#0f5c3a, #9ddec0);
+}
+#perf-proto .metrics {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+#perf-proto .metrics div {
+  background: light-dark(#ffffff, #25282e);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+}
+#perf-proto .metrics span {
+  color: light-dark(#3e4752, #c5ccd4);
+}
+#perf-proto .metrics strong {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+#perf-proto .verdict {
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0;
+}
+#perf-proto .verdict.fail {
+  color: light-dark(#8f1d1d, #f0b4b4);
+}
+#perf-proto .mono {
+  font-family: ui-monospace, monospace;
+}
+@media (max-width: 640px) {
+  #perf-proto .fields, #perf-proto .metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 380px) {
+  #perf-proto .fields, #perf-proto .metrics {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+</body>
+</html>
