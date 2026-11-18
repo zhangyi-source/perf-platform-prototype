@@ -9,7 +9,7 @@
 <div id="perf-proto">
   <p class="vis-sr-only">性能专项测试平台。可在场景、压力机、任务、实时和报告之间切换，并手工登记压力机后发起一轮压测。</p>
   <div class="shell">
-    <header class="top">
+    <aside class="side">
       <div class="brand">性能专项测试平台</div>
       <nav class="nav" aria-label="平台页面">
         <button type="button" class="nav-btn" data-screen="scenario" aria-pressed="false">场景</button>
@@ -18,7 +18,8 @@
         <button type="button" class="nav-btn" data-screen="live" aria-pressed="false">实时</button>
         <button type="button" class="nav-btn" data-screen="report" aria-pressed="false">报告</button>
       </nav>
-    </header>
+    </aside>
+    <main class="main">
 
     <section id="screen-scenario" class="screen" hidden>
       <h2>场景</h2>
@@ -201,6 +202,7 @@
       <p class="note" id="report-slow">变慢最多的服务是订单。慢 Trace：<span class="mono">tid-7c2a91</span>，关联字段 testRunId=run-20261118-01。</p>
       <p class="note" id="report-agents">本轮压力机：测试环境-压测机-01（10.8.1.21）</p>
     </section>
+    </main>
   </div>
 </div>
 <script>
@@ -459,38 +461,47 @@
 }
 #perf-proto .shell {
   background: light-dark(#f3f4f6, #17191d);
+  display: grid;
+  grid-template-columns: 188px minmax(0, 1fr);
+  min-height: 100vh;
+}
+#perf-proto .side {
+  background: light-dark(#ffffff, #25282e);
+  border-right: 1px solid light-dark(#e2e5ea, #3a3f48);
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px;
-}
-#perf-proto .top {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 20px;
-  align-items: center;
-  justify-content: space-between;
+  padding: 16px 12px;
 }
 #perf-proto .brand {
   font-weight: 500;
+  padding: 0 8px;
 }
 #perf-proto .nav {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
 }
 #perf-proto .nav-btn {
   background: transparent;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: 6px;
   color: inherit;
   font: inherit;
-  min-height: 32px;
-  padding: 4px 10px;
+  min-height: 36px;
+  padding: 6px 10px;
+  text-align: left;
+  width: 100%;
 }
 #perf-proto .nav-btn[aria-pressed="true"] {
-  background: light-dark(#ffffff, #25282e);
-  border-color: light-dark(#d5d8de, #3a3f48);
+  background: light-dark(#e7eef8, #2c3a4e);
+}
+#perf-proto .main {
+  min-width: 0;
+  padding: 20px;
+}
+#perf-proto .screen[hidden] {
+  display: none;
 }
 #perf-proto h2, #perf-proto h3 {
   font-size: 16px;
