@@ -3,258 +3,373 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>性能专项测试平台原型</title>
+<title>性能专项测试平台</title>
 </head>
-<body style="margin:0">
-<div id="perf-proto">
-  <p class="vis-sr-only">性能专项测试平台。可在场景、压力机、任务、实时和报告之间切换，并手工登记压力机后发起一轮压测。</p>
+<body>
+<div id="app">
+  <p class="sr">性能专项测试平台。左侧切换概览、创建场景、场景列表、定时压测、报告列表和压力机，每次只显示一个模块。</p>
   <div class="shell">
     <aside class="side">
       <div class="brand">性能专项测试平台</div>
-      <nav class="nav" aria-label="平台页面">
-        <button type="button" class="nav-btn" data-screen="scenario" aria-pressed="false">场景</button>
-        <button type="button" class="nav-btn" data-screen="agent" aria-pressed="true">压力机</button>
-        <button type="button" class="nav-btn" data-screen="task" aria-pressed="false">任务</button>
-        <button type="button" class="nav-btn" data-screen="live" aria-pressed="false">实时</button>
-        <button type="button" class="nav-btn" data-screen="report" aria-pressed="false">报告</button>
+      <div class="group">性能测试</div>
+      <nav aria-label="性能测试">
+        <button type="button" data-screen="home" aria-pressed="true">概览</button>
+        <button type="button" data-screen="create" aria-pressed="false">创建场景</button>
+        <button type="button" data-screen="scenes" aria-pressed="false">场景列表</button>
+        <button type="button" data-screen="schedule" aria-pressed="false">定时压测</button>
+        <button type="button" data-screen="reports" aria-pressed="false">报告列表</button>
+      </nav>
+      <div class="group">施压资源</div>
+      <nav aria-label="施压资源">
+        <button type="button" data-screen="agents" aria-pressed="false">压力机</button>
       </nav>
     </aside>
-    <main class="main">
-
-    <section id="screen-scenario" class="screen" hidden>
-      <h2>场景</h2>
-      <table class="grid">
-        <thead>
-          <tr>
-            <th>名称</th>
-            <th>环境</th>
-            <th>压力模型</th>
-            <th>关注服务</th>
-            <th>脚本</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>下单接口-阶梯</td>
-            <td>测试</td>
-            <td>阶梯加压</td>
-            <td>入口、订单、库存</td>
-            <td>order-step.js</td>
-          </tr>
-          <tr>
-            <td>列表查询-固定并发</td>
-            <td>测试</td>
-            <td>固定并发</td>
-            <td>入口、列表</td>
-            <td>list-constant.js</td>
-          </tr>
-        </tbody>
-      </table>
-      <p class="note">阈值写在场景上。下单接口的客户端通过线是错误率小于 1%，P95 小于 500ms，实际 RPS 不低于目标的 95%。</p>
-    </section>
-
-    <section id="screen-agent" class="screen">
-      <h2>压力机</h2>
-      <p class="note">机器由手工填写。保存后用地址和凭证做连通检查，通过才标成空闲。</p>
-      <table class="grid">
-        <thead>
-          <tr>
-            <th>名称</th>
-            <th>地址</th>
-            <th>环境</th>
-            <th>规格</th>
-            <th>最大并发</th>
-            <th>状态</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="agent-body">
-          <tr data-agent="a1">
-            <td>测试环境-压测机-01</td>
-            <td>10.8.1.21</td>
-            <td>测试</td>
-            <td>8 核 16 GB</td>
-            <td class="num">500</td>
-            <td class="agent-status">空闲</td>
-            <td><button type="button" class="text-btn stop-agent" data-agent="a1">停用</button></td>
-          </tr>
-          <tr data-agent="a2">
-            <td>测试环境-压测机-02</td>
-            <td>10.8.1.22</td>
-            <td>测试</td>
-            <td>8 核 16 GB</td>
-            <td class="num">500</td>
-            <td class="agent-status">空闲</td>
-            <td><button type="button" class="text-btn stop-agent" data-agent="a2">停用</button></td>
-          </tr>
-          <tr data-agent="a3">
-            <td>预发-压测机-01</td>
-            <td>10.8.2.21</td>
-            <td>预发</td>
-            <td>16 核 32 GB</td>
-            <td class="num">1000</td>
-            <td class="agent-status">停用</td>
-            <td><button type="button" class="text-btn stop-agent" data-agent="a3" disabled>已停用</button></td>
-          </tr>
-        </tbody>
-      </table>
-
-      <form id="agent-form" class="form">
-        <h3>登记一台压力机</h3>
-        <div class="fields">
-          <label>名称<input name="name" required autocomplete="off" placeholder="测试环境-压测机-03"></label>
-          <label>地址<input name="address" required autocomplete="off" placeholder="10.8.1.23"></label>
-          <label>端口<input name="port" inputmode="numeric" value="22"></label>
-          <label>登录用户<input name="user" required autocomplete="off" placeholder="loadrunner"></label>
-          <label>登录凭证<input name="secret" type="password" required autocomplete="off" placeholder="私钥或密码"></label>
-          <label>所属环境
-            <select name="env">
-              <option>测试</option>
-              <option>预发</option>
-            </select>
-          </label>
-          <label>网络
-            <select name="net">
-              <option>内网</option>
-              <option>公网</option>
-            </select>
-          </label>
-          <label>CPU 核数<input name="cpu" inputmode="numeric" value="8"></label>
-          <label>内存 GB<input name="mem" inputmode="numeric" value="16"></label>
-          <label>单机最大并发<input name="vu" inputmode="numeric" value="500"></label>
-          <label>单机最大 RPS<input name="rps" inputmode="numeric" value="3000"></label>
-          <label>带宽<input name="bw" placeholder="100 Mb/s" value="100 Mb/s"></label>
-          <label class="wide">备注<input name="note" placeholder="负责人、机器来源"></label>
+    <main>
+      <section id="screen-home">
+        <h1>概览</h1>
+        <div class="stats">
+          <div><span>场景</span><strong>2</strong></div>
+          <div><span>空闲压力机</span><strong id="home-idle">2</strong></div>
+          <div><span>进行中的压测</span><strong id="home-running">0</strong></div>
+          <div><span>最近报告</span><strong>未通过</strong></div>
         </div>
-        <p id="agent-error" class="error" hidden></p>
-        <p id="agent-saved" class="ok" hidden>已保存。连通检查通过，状态为空闲。</p>
-        <button type="submit" class="primary">保存</button>
-      </form>
-    </section>
+        <h2>最近场景</h2>
+        <table>
+          <thead><tr><th>场景</th><th>压力模式</th><th>最近结果</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>下单接口-阶梯</td><td>虚拟用户 · 自动递增</td><td>未通过</td><td><button type="button" class="link" data-go="reports">查看报告</button></td></tr>
+            <tr><td>列表查询-固定并发</td><td>虚拟用户 · 固定量级</td><td>通过</td><td><button type="button" class="link" data-go="reports">查看报告</button></td></tr>
+          </tbody>
+        </table>
+      </section>
 
-    <section id="screen-task" class="screen" hidden>
-      <h2>发起任务</h2>
-      <form id="task-form" class="form">
-        <div class="fields">
-          <label>场景
-            <select name="scenario" id="task-scenario">
-              <option value="order">下单接口-阶梯</option>
-              <option value="list">列表查询-固定并发</option>
-            </select>
-          </label>
-          <label>环境
-            <select name="env" id="task-env">
-              <option>测试</option>
-              <option>预发</option>
-            </select>
-          </label>
-          <label>压力模型<input id="task-model" value="阶梯加压" readonly></label>
-          <label>时长（分钟）<input name="minutes" inputmode="numeric" value="10"></label>
+      <section id="screen-create" hidden>
+        <h1>创建场景</h1>
+        <label class="line">场景名<input id="scene-name" value="下单接口-阶梯"></label>
+        <div class="tabs" role="tablist" aria-label="创建场景">
+          <button type="button" class="tab" data-tab="biz" aria-pressed="true">场景配置</button>
+          <button type="button" class="tab" data-tab="load" aria-pressed="false">施压配置</button>
+          <button type="button" class="tab" data-tab="adv" aria-pressed="false">高级设置</button>
+          <button type="button" class="tab" data-tab="sla" aria-pressed="false">SLA</button>
         </div>
-        <fieldset>
-          <legend>勾选压力机</legend>
-          <div id="machine-picks"></div>
-        </fieldset>
-        <p class="note" id="split-note">当前勾选合计最大并发 500。任务会按各机器填写的最大并发切分 VU。</p>
-        <p id="task-error" class="error" hidden></p>
-        <button type="submit" class="primary">发起压测</button>
-      </form>
-    </section>
+        <div id="tab-biz" class="panel">
+          <h2>业务会话 · 提交订单</h2>
+          <p class="note">同一业务会话里的 API 按顺序发出。多个业务会话同时发出。</p>
+          <table>
+            <thead><tr><th>顺序</th><th>API</th><th>方法</th><th>URL</th><th>检查点</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>登录</td><td>POST</td><td>/v1/auth/login</td><td>状态码 200</td></tr>
+              <tr><td>2</td><td>提交订单</td><td>POST</td><td>/v1/orders</td><td>业务码成功</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="tab-load" class="panel" hidden>
+          <div class="fields">
+            <label>压力来源
+              <select><option>测试环境内网</option><option>预发内网</option></select>
+            </label>
+            <label>压力模式
+              <select id="mode"><option>虚拟用户模式</option><option>RPS 模式</option></select>
+            </label>
+            <label>递增模式
+              <select><option>自动递增</option><option>手动调速</option></select>
+            </label>
+            <label>最大虚拟用户<input id="max-vu" value="1000" inputmode="numeric"></label>
+            <label>起始百分比<input value="10%"></label>
+            <label>压测总时长（分钟）<input id="minutes" value="10" inputmode="numeric"></label>
+          </div>
+          <h2>指定压力机</h2>
+          <p class="note">只列出当前环境里空闲、已手工登记的机器。并发按各机器的最大并发切分。</p>
+          <div id="create-picks"></div>
+          <p class="note" id="create-split"></p>
+        </div>
+        <div id="tab-adv" class="panel" hidden>
+          <div class="fields">
+            <label>日志采样率<input value="1%"></label>
+            <label>关注服务<input value="入口、订单、库存"></label>
+            <label>应用监控<input value="SkyWalking" readonly></label>
+            <label>基础设施<input value="Prometheus" readonly></label>
+          </div>
+          <p class="note">采样率高于 1% 时，计费 VUM 按（1 + 采样率）增加。默认 1% 不加。</p>
+        </div>
+        <div id="tab-sla" class="panel" hidden>
+          <table>
+            <thead><tr><th>对象</th><th>指标</th><th>条件</th><th>动作</th></tr></thead>
+            <tbody>
+              <tr><td>全场景</td><td>请求成功率</td><td>大于 99%</td><td>低于则停止</td></tr>
+              <tr><td>全场景</td><td>P95</td><td>小于 500 ms</td><td>高于则告警</td></tr>
+              <tr><td>订单</td><td>平均 RT</td><td>较基线升幅小于 30%</td><td>高于则告警</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p id="create-error" class="error" hidden></p>
+        <p id="debug-ok" class="ok" hidden>调试通过。登录返回 200，提交订单断言成功。</p>
+        <div class="actions">
+          <button type="button" id="debug" class="ghost">调试场景</button>
+          <button type="button" id="start" class="primary">保存去压测</button>
+        </div>
+      </section>
 
-    <section id="screen-live" class="screen" hidden>
-      <h2>实时</h2>
-      <p class="note" id="live-caption">下单接口-阶梯 · 测试 · 执行中 · 已运行 4 分钟</p>
-      <div class="metrics" aria-label="客户端指标">
-        <div><span>当前 VU</span><strong id="live-vu">200</strong></div>
-        <div><span>实际 RPS</span><strong id="live-rps">1,860</strong></div>
-        <div><span>错误率</span><strong id="live-err">0.4%</strong></div>
-        <div><span>P95</span><strong id="live-p95">420 ms</strong></div>
-      </div>
-      <table class="grid">
-        <caption>关注服务</caption>
-        <thead>
-          <tr><th>服务</th><th>吞吐量 / 分钟</th><th>平均耗时</th><th>错误率</th></tr>
-        </thead>
-        <tbody id="live-services">
-          <tr><td>入口</td><td class="num">108,000</td><td class="num">86 ms</td><td class="num">0.2%</td></tr>
-          <tr><td>订单</td><td class="num">42,000</td><td class="num">210 ms</td><td class="num">0.4%</td></tr>
-          <tr><td>库存</td><td class="num">42,000</td><td class="num">64 ms</td><td class="num">0.1%</td></tr>
-        </tbody>
-      </table>
-      <p class="note" id="live-agents">占用压力机：测试环境-压测机-01</p>
-      <button type="button" class="primary" id="finish-run">结束并出报告</button>
-    </section>
+      <section id="screen-scenes" hidden>
+        <h1>场景列表</h1>
+        <table>
+          <thead><tr><th>场景名</th><th>压力模式</th><th>最大量级</th><th>修改时间</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td>下单接口-阶梯</td>
+              <td>虚拟用户 · 自动递增</td>
+              <td class="num">1,000 VU</td>
+              <td>2026-11-18 14:10</td>
+              <td class="ops"><button type="button" class="link start-scene">启动</button><button type="button" class="link" data-go="create">编辑</button></td>
+            </tr>
+            <tr>
+              <td>列表查询-固定并发</td>
+              <td>虚拟用户 · 固定量级</td>
+              <td class="num">200 VU</td>
+              <td>2026-11-17 18:02</td>
+              <td class="ops"><button type="button" class="link start-scene">启动</button><button type="button" class="link" data-go="create">编辑</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
 
-    <section id="screen-report" class="screen" hidden>
-      <h2>报告</h2>
-      <p id="report-title" class="verdict fail">未通过</p>
-      <p class="note" id="report-meta">下单接口-阶梯 · 测试 · 10 分钟阶梯 · 客户端 P95 高于 500 ms</p>
-      <table class="grid">
-        <thead>
-          <tr><th>指标</th><th>实际</th><th>门槛</th><th>结果</th></tr>
-        </thead>
-        <tbody id="report-body">
-          <tr><td>错误率</td><td class="num">0.6%</td><td>小于 1%</td><td>通过</td></tr>
-          <tr><td>P95</td><td class="num">640 ms</td><td>小于 500 ms</td><td>未通过</td></tr>
-          <tr><td>实际 RPS</td><td class="num">1,920</td><td>不低于目标的 95%</td><td>通过</td></tr>
-        </tbody>
-      </table>
-      <p class="note" id="report-slow">变慢最多的服务是订单。慢 Trace：<span class="mono">tid-7c2a91</span>，关联字段 testRunId=run-20261118-01。</p>
-      <p class="note" id="report-agents">本轮压力机：测试环境-压测机-01（10.8.1.21）</p>
-    </section>
+      <section id="screen-running" hidden>
+        <h1>压测中 · <span id="run-name">下单接口-阶梯</span></h1>
+        <p class="note" id="run-meta">执行中 · 虚拟用户 · 自动递增 · 计划 10 分钟</p>
+        <div class="stats">
+          <div><span>请求成功率</span><strong>99.6%</strong></div>
+          <div><span>平均 RT</span><strong>186 ms</strong></div>
+          <div><span>TPS 当前</span><strong>1,860</strong></div>
+          <div><span>并发 当前 / 最大</span><strong>200 / 1,000</strong></div>
+          <div><span>异常数</span><strong>12</strong></div>
+          <div><span>实时 VUM</span><strong>2,000</strong></div>
+        </div>
+        <h2>业务会话</h2>
+        <table>
+          <thead><tr><th>API</th><th>当前 RT</th><th>成功率</th><th>并发</th></tr></thead>
+          <tbody>
+            <tr><td>登录</td><td class="num">42 ms</td><td class="num">99.9%</td><td class="num">40</td></tr>
+            <tr><td>提交订单</td><td class="num">248 ms</td><td class="num">99.4%</td><td class="num">160</td></tr>
+          </tbody>
+        </table>
+        <h2>关注服务</h2>
+        <table>
+          <thead><tr><th>服务</th><th>吞吐量 / 分钟</th><th>平均耗时</th><th>错误率</th></tr></thead>
+          <tbody>
+            <tr><td>入口</td><td class="num">108,000</td><td class="num">86 ms</td><td class="num">0.2%</td></tr>
+            <tr><td>订单</td><td class="num">42,000</td><td class="num">210 ms</td><td class="num">0.4%</td></tr>
+            <tr><td>库存</td><td class="num">42,000</td><td class="num">64 ms</td><td class="num">0.1%</td></tr>
+          </tbody>
+        </table>
+        <div class="tune">
+          <label>全局调速（虚拟用户）<input id="tune" value="400" inputmode="numeric"></label>
+          <button type="button" id="apply-tune" class="ghost">调速</button>
+          <span id="tune-msg" class="note"></span>
+        </div>
+        <p class="note" id="run-agents">施压机：测试环境-压测机-01</p>
+        <button type="button" id="stop" class="primary">停止并查看报告</button>
+      </section>
+
+      <section id="screen-schedule" hidden>
+        <h1>定时压测</h1>
+        <table>
+          <thead><tr><th>任务</th><th>关联场景</th><th>频率</th><th>通知</th><th>状态</th></tr></thead>
+          <tbody>
+            <tr><td>下单夜间回归</td><td>下单接口-阶梯</td><td>每天 02:00</td><td>结束后通知</td><td>启用</td></tr>
+            <tr><td>列表提测探测</td><td>列表查询-固定并发</td><td>提测后触发</td><td>失败时通知</td><td>启用</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="screen-reports" hidden>
+        <h1>报告列表</h1>
+        <table id="report-list">
+          <thead><tr><th>报告</th><th>场景</th><th>开始时间</th><th>结果</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td>run-20261118-01</td>
+              <td>下单接口-阶梯</td>
+              <td>2026-11-18 14:10</td>
+              <td>未通过</td>
+              <td><button type="button" class="link" id="open-report">查看报告</button></td>
+            </tr>
+            <tr>
+              <td>run-20261117-06</td>
+              <td>列表查询-固定并发</td>
+              <td>2026-11-17 18:02</td>
+              <td>通过</td>
+              <td><button type="button" class="link" id="open-pass">查看报告</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div id="report-detail" hidden>
+          <button type="button" class="link" id="back-reports">返回报告列表</button>
+          <h2 id="detail-title">run-20261118-01 · 未通过</h2>
+          <div class="tabs" role="tablist" aria-label="报告详情">
+            <button type="button" class="rtab" data-rtab="biz" aria-pressed="true">业务监控</button>
+            <button type="button" class="rtab" data-rtab="agent" aria-pressed="false">施压机监控</button>
+            <button type="button" class="rtab" data-rtab="log" aria-pressed="false">采样日志</button>
+            <button type="button" class="rtab" data-rtab="base" aria-pressed="false">基线对比</button>
+          </div>
+          <div id="rtab-biz" class="panel">
+            <div class="stats">
+              <div><span>请求成功率</span><strong id="d-ok">99.4%</strong></div>
+              <div><span>平均 RT</span><strong id="d-rt">248 ms</strong></div>
+              <div><span>TPS 平均 / 峰值</span><strong id="d-tps">1,740 / 1,920</strong></div>
+              <div><span>总请求数</span><strong>1,044,000</strong></div>
+            </div>
+            <table>
+              <thead><tr><th>指标</th><th>实际</th><th>SLA</th><th>结果</th></tr></thead>
+              <tbody id="d-sla">
+                <tr><td>请求成功率</td><td class="num">99.4%</td><td>大于 99%</td><td>通过</td></tr>
+                <tr><td>P95</td><td class="num">640 ms</td><td>小于 500 ms</td><td>未通过</td></tr>
+              </tbody>
+            </table>
+            <p class="note" id="d-trace">变慢最多的服务是订单。采样 Trace tid-7c2a91，testRunId=run-20261118-01。</p>
+          </div>
+          <div id="rtab-agent" class="panel" hidden>
+            <table>
+              <thead><tr><th>压力机</th><th>地址</th><th>CPU</th><th>内存</th><th>带宽</th></tr></thead>
+              <tbody id="d-agents"></tbody>
+            </table>
+          </div>
+          <div id="rtab-log" class="panel" hidden>
+            <table>
+              <thead><tr><th>阶段</th><th>耗时</th></tr></thead>
+              <tbody>
+                <tr><td>建连</td><td class="num">8 ms</td></tr>
+                <tr><td>发送请求</td><td class="num">2 ms</td></tr>
+                <tr><td>等待首字节</td><td class="num">610 ms</td></tr>
+                <tr><td>下载响应</td><td class="num">20 ms</td></tr>
+              </tbody>
+            </table>
+            <p class="note">采样日志保留 30 天。等待首字节占了这条慢请求的大部分时间。</p>
+          </div>
+          <div id="rtab-base" class="panel" hidden>
+            <table>
+              <thead><tr><th>指标</th><th>本次</th><th>基线</th><th>差值</th></tr></thead>
+              <tbody>
+                <tr><td>P95</td><td class="num">640 ms</td><td class="num">420 ms</td><td>高 220 ms</td></tr>
+                <tr><td>订单平均 RT</td><td class="num">248 ms</td><td class="num">180 ms</td><td>升幅 38%</td></tr>
+              </tbody>
+            </table>
+            <p class="note">基线取同一场景、同一环境、最近一次通过的任务。</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="screen-agents" hidden>
+        <h1>压力机</h1>
+        <p class="note">机器手工登记。保存时做连通检查，通过后状态为空闲。凭证不回显。</p>
+        <table>
+          <thead><tr><th>名称</th><th>地址</th><th>环境</th><th>规格</th><th>最大并发</th><th>状态</th><th></th></tr></thead>
+          <tbody id="agent-body">
+            <tr data-id="a1"><td>测试环境-压测机-01</td><td>10.8.1.21</td><td>测试</td><td>8 核 16 GB</td><td class="num">500</td><td class="st">空闲</td><td><button type="button" class="link stop" data-id="a1">停用</button></td></tr>
+            <tr data-id="a2"><td>测试环境-压测机-02</td><td>10.8.1.22</td><td>测试</td><td>8 核 16 GB</td><td class="num">500</td><td class="st">空闲</td><td><button type="button" class="link stop" data-id="a2">停用</button></td></tr>
+            <tr data-id="a3"><td>预发-压测机-01</td><td>10.8.2.21</td><td>预发</td><td>16 核 32 GB</td><td class="num">1000</td><td class="st">停用</td><td><button type="button" class="link stop" data-id="a3" disabled>已停用</button></td></tr>
+          </tbody>
+        </table>
+        <form id="agent-form">
+          <h2>登记压力机</h2>
+          <div class="fields">
+            <label>名称<input name="name" required placeholder="测试环境-压测机-03"></label>
+            <label>地址<input name="address" required placeholder="10.8.1.23"></label>
+            <label>端口<input name="port" value="22"></label>
+            <label>登录用户<input name="user" required placeholder="loadrunner"></label>
+            <label>登录凭证<input name="secret" type="password" required placeholder="私钥或密码"></label>
+            <label>所属环境<select name="env"><option>测试</option><option>预发</option></select></label>
+            <label>网络<select name="net"><option>内网</option><option>公网</option></select></label>
+            <label>CPU 核数<input name="cpu" value="8"></label>
+            <label>内存 GB<input name="mem" value="16"></label>
+            <label>单机最大并发<input name="vu" value="500"></label>
+            <label class="wide">备注<input name="note" placeholder="负责人、机器来源"></label>
+          </div>
+          <p id="agent-error" class="error" hidden></p>
+          <p id="agent-saved" class="ok" hidden>已保存。连通检查通过，状态为空闲。</p>
+          <button type="submit" class="primary">保存</button>
+        </form>
+      </section>
     </main>
   </div>
 </div>
 <script>
 (function () {
-  var root = document.getElementById("perf-proto");
-  var screens = ["scenario", "agent", "task", "live", "report"];
+  var root = document.getElementById("app");
+  var screens = ["home", "create", "scenes", "running", "schedule", "reports", "agents"];
   var agents = [
     { id: "a1", name: "测试环境-压测机-01", address: "10.8.1.21", env: "测试", spec: "8 核 16 GB", vu: 500, status: "空闲" },
     { id: "a2", name: "测试环境-压测机-02", address: "10.8.1.22", env: "测试", spec: "8 核 16 GB", vu: 500, status: "空闲" },
     { id: "a3", name: "预发-压测机-01", address: "10.8.2.21", env: "预发", spec: "16 核 32 GB", vu: 1000, status: "停用" }
   ];
   var seq = 4;
-  var currentRun = null;
+  var running = false;
 
   function show(name) {
     screens.forEach(function (id) {
-      var section = root.querySelector("#screen-" + id);
-      var btn = root.querySelector('.nav-btn[data-screen="' + id + '"]');
-      var on = id === name;
-      section.hidden = !on;
-      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      root.querySelector("#screen-" + id).hidden = id !== name;
     });
+    root.querySelectorAll(".side button[data-screen]").forEach(function (btn) {
+      btn.setAttribute("aria-pressed", btn.getAttribute("data-screen") === name ? "true" : "false");
+    });
+    if (name === "reports") {
+      root.querySelector("#report-list").hidden = false;
+      root.querySelector("#report-detail").hidden = true;
+    }
   }
 
-  root.querySelectorAll(".nav-btn").forEach(function (btn) {
+  root.querySelectorAll(".side button[data-screen]").forEach(function (btn) {
     btn.addEventListener("click", function () { show(btn.getAttribute("data-screen")); });
   });
+  root.addEventListener("click", function (event) {
+    var go = event.target.closest("[data-go]");
+    if (go) show(go.getAttribute("data-go"));
+  });
 
-  function setMsg(id, text) {
+  function setTab(group, name, attr) {
+    root.querySelectorAll(group).forEach(function (btn) {
+      var on = btn.getAttribute(attr) === name;
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      root.querySelector("#" + (attr === "data-tab" ? "tab-" : "rtab-") + btn.getAttribute(attr)).hidden = !on;
+    });
+  }
+  root.querySelectorAll(".tab").forEach(function (btn) {
+    btn.addEventListener("click", function () { setTab(".tab", btn.getAttribute("data-tab"), "data-tab"); });
+  });
+  root.querySelectorAll(".rtab").forEach(function (btn) {
+    btn.addEventListener("click", function () { setTab(".rtab", btn.getAttribute("data-rtab"), "data-rtab"); });
+  });
+
+  function msg(id, text) {
     var el = root.querySelector("#" + id);
     el.hidden = !text;
     el.textContent = text || "";
   }
 
+  function idleCount() {
+    return agents.filter(function (a) { return a.status === "空闲"; }).length;
+  }
+  function refreshHome() {
+    root.querySelector("#home-idle").textContent = String(idleCount());
+    root.querySelector("#home-running").textContent = running ? "1" : "0";
+  }
+
   function renderPicks() {
-    var env = root.querySelector("#task-env").value;
-    var box = root.querySelector("#machine-picks");
+    var box = root.querySelector("#create-picks");
     box.replaceChildren();
-    var available = agents.filter(function (a) { return a.env === env && a.status === "空闲"; });
-    if (!available.length) {
-      var empty = document.createElement("p");
-      empty.className = "note";
-      empty.textContent = "这个环境没有空闲压力机。到压力机页登记或恢复一台。";
-      box.appendChild(empty);
+    var list = agents.filter(function (a) { return a.env === "测试" && a.status === "空闲"; });
+    if (!list.length) {
+      var p = document.createElement("p");
+      p.className = "note";
+      p.textContent = "测试环境没有空闲压力机。先到压力机页登记。";
+      box.appendChild(p);
     }
-    available.forEach(function (a, index) {
+    list.forEach(function (a, i) {
       var label = document.createElement("label");
       label.className = "pick";
       var input = document.createElement("input");
       input.type = "checkbox";
       input.value = a.id;
-      input.checked = index === 0;
+      input.checked = i === 0;
       input.addEventListener("change", updateSplit);
       label.appendChild(input);
       label.appendChild(document.createTextNode(a.name + " · " + a.address + " · 最大并发 " + a.vu));
@@ -262,50 +377,44 @@
     });
     updateSplit();
   }
-
-  function selectedAgents() {
-    return Array.prototype.map.call(root.querySelectorAll("#machine-picks input:checked"), function (input) {
+  function picked() {
+    return Array.prototype.map.call(root.querySelectorAll("#create-picks input:checked"), function (input) {
       return agents.find(function (a) { return a.id === input.value; });
     }).filter(Boolean);
   }
-
   function updateSplit() {
-    var picked = selectedAgents();
-    var sum = picked.reduce(function (n, a) { return n + a.vu; }, 0);
-    var note = root.querySelector("#split-note");
-    note.textContent = picked.length
-      ? "当前勾选 " + picked.length + " 台，合计最大并发 " + sum.toLocaleString("zh-CN") + "。任务按各机器填写的最大并发切分 VU。"
+    var list = picked();
+    var sum = list.reduce(function (n, a) { return n + a.vu; }, 0);
+    root.querySelector("#create-split").textContent = list.length
+      ? "已选 " + list.length + " 台，合计最大并发 " + sum.toLocaleString("zh-CN") + "。"
       : "还没有勾选压力机。";
   }
 
-  function statusCell(tr) {
-    return tr.querySelector(".agent-status");
-  }
-
-  function syncTableStatus() {
+  function syncAgents() {
     agents.forEach(function (a) {
-      var tr = root.querySelector('#agent-body tr[data-agent="' + a.id + '"]');
+      var tr = root.querySelector('#agent-body tr[data-id="' + a.id + '"]');
       if (!tr) return;
-      statusCell(tr).textContent = a.status;
-      var btn = tr.querySelector(".stop-agent");
-      var stopped = a.status === "停用";
-      btn.disabled = stopped;
-      btn.textContent = stopped ? "已停用" : "停用";
+      tr.querySelector(".st").textContent = a.status;
+      var btn = tr.querySelector(".stop");
+      var off = a.status === "停用";
+      btn.disabled = off;
+      btn.textContent = off ? "已停用" : "停用";
     });
+    renderPicks();
+    refreshHome();
   }
 
   root.querySelector("#agent-body").addEventListener("click", function (event) {
-    var btn = event.target.closest(".stop-agent");
+    var btn = event.target.closest(".stop");
     if (!btn || btn.disabled) return;
-    var agent = agents.find(function (a) { return a.id === btn.getAttribute("data-agent"); });
+    var agent = agents.find(function (a) { return a.id === btn.getAttribute("data-id"); });
     if (!agent || agent.status === "占用") {
-      setMsg("agent-error", "这台压力机正在任务中，结束后才能停用。");
+      msg("agent-error", "这台压力机正在压测，停止压测后才能停用。");
       return;
     }
     agent.status = "停用";
-    syncTableStatus();
-    renderPicks();
-    setMsg("agent-error", "");
+    msg("agent-error", "");
+    syncAgents();
   });
 
   root.querySelector("#agent-form").addEventListener("submit", function (event) {
@@ -317,36 +426,20 @@
     var secret = String(data.get("secret") || "").trim();
     var vu = Number(data.get("vu"));
     if (!name || !address || !user || !secret) {
-      setMsg("agent-saved", "");
-      setMsg("agent-error", "名称、地址、登录用户和登录凭证都要填写。");
+      msg("agent-saved", "");
+      msg("agent-error", "名称、地址、登录用户和登录凭证都要填写。");
       return;
     }
-    if (!/^[\w.-]+$/.test(address)) {
-      setMsg("agent-saved", "");
-      setMsg("agent-error", "地址需要是 IP 或主机名。");
-      return;
-    }
-    if (!Number.isFinite(vu) || vu <= 0) {
-      setMsg("agent-saved", "");
-      setMsg("agent-error", "单机最大并发要大于 0。");
+    if (!/^[\w.-]+$/.test(address) || !vu) {
+      msg("agent-saved", "");
+      msg("agent-error", "地址要是 IP 或主机名，最大并发要大于 0。");
       return;
     }
     var id = "a" + seq++;
-    var cpu = String(data.get("cpu") || "").trim();
-    var mem = String(data.get("mem") || "").trim();
-    var agent = {
-      id: id,
-      name: name,
-      address: address,
-      env: String(data.get("env")),
-      spec: cpu + " 核 " + mem + " GB",
-      vu: vu,
-      status: "空闲"
-    };
-    agents.push(agent);
+    agents.push({ id: id, name: name, address: address, env: String(data.get("env")), spec: data.get("cpu") + " 核 " + data.get("mem") + " GB", vu: vu, status: "空闲" });
     var tr = document.createElement("tr");
-    tr.setAttribute("data-agent", id);
-    [name, address, agent.env, agent.spec].forEach(function (text) {
+    tr.setAttribute("data-id", id);
+    [name, address, String(data.get("env")), data.get("cpu") + " 核 " + data.get("mem") + " GB"].forEach(function (text) {
       var td = document.createElement("td");
       td.textContent = text;
       tr.appendChild(td);
@@ -356,310 +449,168 @@
     vuTd.textContent = String(vu);
     tr.appendChild(vuTd);
     var st = document.createElement("td");
-    st.className = "agent-status";
+    st.className = "st";
     st.textContent = "空闲";
     tr.appendChild(st);
-    var action = document.createElement("td");
+    var op = document.createElement("td");
     var stop = document.createElement("button");
     stop.type = "button";
-    stop.className = "text-btn stop-agent";
-    stop.setAttribute("data-agent", id);
+    stop.className = "link stop";
+    stop.setAttribute("data-id", id);
     stop.textContent = "停用";
-    action.appendChild(stop);
-    tr.appendChild(action);
+    op.appendChild(stop);
+    tr.appendChild(op);
     root.querySelector("#agent-body").appendChild(tr);
     event.currentTarget.reset();
     event.currentTarget.elements.port.value = "22";
     event.currentTarget.elements.cpu.value = "8";
     event.currentTarget.elements.mem.value = "16";
     event.currentTarget.elements.vu.value = "500";
-    event.currentTarget.elements.rps.value = "3000";
-    event.currentTarget.elements.bw.value = "100 Mb/s";
-    setMsg("agent-error", "");
-    setMsg("agent-saved", "已保存。连通检查通过，状态为空闲。");
-    renderPicks();
+    msg("agent-error", "");
+    msg("agent-saved", "已保存。连通检查通过，状态为空闲。");
+    syncAgents();
   });
 
-  ["name", "address", "user", "secret", "vu"].forEach(function (field) {
-    root.querySelector("#agent-form").elements[field].addEventListener("input", function () {
-      setMsg("agent-error", "");
-    });
-  });
-
-  var models = { order: "阶梯加压", list: "固定并发" };
-  root.querySelector("#task-scenario").addEventListener("change", function (event) {
-    root.querySelector("#task-model").value = models[event.target.value];
-  });
-  root.querySelector("#task-env").addEventListener("change", renderPicks);
-
-  root.querySelector("#task-form").addEventListener("submit", function (event) {
-    event.preventDefault();
-    var picked = selectedAgents();
-    if (!picked.length) {
-      setMsg("task-error", "先勾选至少一台当前环境的空闲压力机。");
+  function beginRun() {
+    var list = picked();
+    if (!list.length) {
+      msg("create-error", "施压配置里先勾选至少一台空闲压力机。");
+      setTab(".tab", "load", "data-tab");
       return;
     }
-    var minutes = Number(new FormData(event.currentTarget).get("minutes"));
-    if (!Number.isFinite(minutes) || minutes <= 0) {
-      setMsg("task-error", "时长要大于 0 分钟。");
-      return;
-    }
-    setMsg("task-error", "");
-    agents.forEach(function (a) {
-      if (picked.some(function (p) { return p.id === a.id; })) a.status = "占用";
+    msg("create-error", "");
+    running = true;
+    list.forEach(function (a) { a.status = "占用"; });
+    syncAgents();
+    root.querySelector("#run-name").textContent = root.querySelector("#scene-name").value || "下单接口-阶梯";
+    root.querySelector("#run-meta").textContent = "执行中 · " + root.querySelector("#mode").value + " · 计划 " + (root.querySelector("#minutes").value || "10") + " 分钟";
+    root.querySelector("#run-agents").textContent = "施压机：" + list.map(function (a) { return a.name + "（" + a.address + "）"; }).join("、");
+    var body = root.querySelector("#d-agents");
+    body.replaceChildren();
+    list.forEach(function (a) {
+      var tr = document.createElement("tr");
+      [a.name, a.address, "36%", "48%", "40 Mb/s"].forEach(function (text) {
+        var td = document.createElement("td");
+        td.textContent = text;
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
     });
-    syncTableStatus();
-    currentRun = {
-      scenario: root.querySelector("#task-scenario").selectedOptions[0].textContent,
-      model: root.querySelector("#task-model").value,
-      env: root.querySelector("#task-env").value,
-      minutes: minutes,
-      agents: picked.map(function (a) { return a.name + "（" + a.address + "）"; })
-    };
-    root.querySelector("#live-caption").textContent = currentRun.scenario + " · " + currentRun.env + " · 执行中 · 计划 " + minutes + " 分钟";
-    root.querySelector("#live-vu").textContent = "200";
-    root.querySelector("#live-rps").textContent = "1,860";
-    root.querySelector("#live-err").textContent = "0.4%";
-    root.querySelector("#live-p95").textContent = "420 ms";
-    root.querySelector("#live-agents").textContent = "占用压力机：" + picked.map(function (a) { return a.name; }).join("、");
-    renderPicks();
-    show("live");
-  });
+    show("running");
+  }
 
-  root.querySelector("#finish-run").addEventListener("click", function () {
-    var run = currentRun || {
-      scenario: "下单接口-阶梯",
-      model: "阶梯加压",
-      env: "测试",
-      minutes: 10,
-      agents: ["测试环境-压测机-01（10.8.1.21）"]
-    };
-    agents.forEach(function (a) {
-      if (a.status === "占用") a.status = "空闲";
+  root.querySelector("#debug").addEventListener("click", function () {
+    msg("create-error", "");
+    msg("debug-ok", "调试通过。登录返回 200，提交订单断言成功。");
+  });
+  root.querySelector("#start").addEventListener("click", beginRun);
+  root.querySelectorAll(".start-scene").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      if (!picked().length) {
+        show("create");
+        setTab(".tab", "load", "data-tab");
+        msg("create-error", "这个场景还没有勾选空闲压力机。");
+        return;
+      }
+      beginRun();
     });
-    syncTableStatus();
-    renderPicks();
-    var verdict = root.querySelector("#report-title");
-    verdict.textContent = "未通过";
-    verdict.className = "verdict fail";
-    root.querySelector("#report-meta").textContent = run.scenario + " · " + run.env + " · " + run.minutes + " 分钟" + run.model + " · 客户端 P95 高于 500 ms";
-    root.querySelector("#report-agents").textContent = "本轮压力机：" + run.agents.join("、");
-    root.querySelector("#live-caption").textContent = run.scenario + " · 已结束 · 报告已生成";
-    root.querySelector("#live-agents").textContent = "压力机已释放：" + run.agents.map(function (name) { return name.split("（")[0]; }).join("、");
-    show("report");
+  });
+  root.querySelector("#apply-tune").addEventListener("click", function () {
+    var n = Number(root.querySelector("#tune").value);
+    root.querySelector("#tune-msg").textContent = n > 0 ? "已切到手动调速，当前并发 " + n.toLocaleString("zh-CN") + "。" : "调速值要大于 0。";
+  });
+  root.querySelector("#stop").addEventListener("click", function () {
+    running = false;
+    agents.forEach(function (a) { if (a.status === "占用") a.status = "空闲"; });
+    syncAgents();
+    show("reports");
+    root.querySelector("#report-list").hidden = true;
+    root.querySelector("#report-detail").hidden = false;
+    root.querySelector("#detail-title").textContent = "本轮报告 · 未通过";
+  });
+  root.querySelector("#open-report").addEventListener("click", function () {
+    root.querySelector("#report-list").hidden = true;
+    root.querySelector("#report-detail").hidden = false;
+    root.querySelector("#detail-title").textContent = "run-20261118-01 · 未通过";
+    root.querySelector("#d-ok").textContent = "99.4%";
+    root.querySelector("#d-rt").textContent = "248 ms";
+    root.querySelector("#d-tps").textContent = "1,740 / 1,920";
+    root.querySelector("#d-sla").children[1].children[1].textContent = "640 ms";
+    root.querySelector("#d-sla").children[1].children[3].textContent = "未通过";
+    root.querySelector("#d-trace").textContent = "变慢最多的服务是订单。采样 Trace tid-7c2a91，testRunId=run-20261118-01。";
+  });
+  root.querySelector("#open-pass").addEventListener("click", function () {
+    root.querySelector("#report-list").hidden = true;
+    root.querySelector("#report-detail").hidden = false;
+    root.querySelector("#detail-title").textContent = "run-20261117-06 · 通过";
+    root.querySelector("#d-ok").textContent = "99.8%";
+    root.querySelector("#d-rt").textContent = "96 ms";
+    root.querySelector("#d-tps").textContent = "420 / 460";
+    root.querySelector("#d-sla").children[1].children[1].textContent = "320 ms";
+    root.querySelector("#d-sla").children[1].children[3].textContent = "通过";
+    root.querySelector("#d-trace").textContent = "列表查询未突破 SLA。采样 Trace tid-11ab02。";
+  });
+  root.querySelector("#back-reports").addEventListener("click", function () {
+    root.querySelector("#report-detail").hidden = true;
+    root.querySelector("#report-list").hidden = false;
   });
 
   renderPicks();
+  refreshHome();
 })();
 </script>
 <style>
-#perf-proto {
-  color: light-dark(#1a1d23, #f2f3f5);
-  font-family: system-ui, sans-serif;
-  font-size: 14px;
-  line-height: 1.45;
+body { margin: 0; }
+#app { color: light-dark(#1a1d23, #f2f3f5); font: 14px/1.45 system-ui, sans-serif; }
+.sr { height: 1px; left: -999px; overflow: hidden; position: absolute; width: 1px; }
+.shell { display: grid; grid-template-columns: 200px minmax(0, 1fr); min-height: 100vh; background: light-dark(#f5f6f8, #16181c); }
+.side { background: light-dark(#fff, #23262c); border-right: 1px solid light-dark(#e6e8ec, #343841); padding: 16px 12px; }
+.brand { font-weight: 500; padding: 0 8px 12px; }
+.group { color: light-dark(#5c6570, #a8b0ba); font-size: 12px; padding: 12px 8px 4px; }
+.side nav { display: flex; flex-direction: column; gap: 2px; }
+.side button { background: transparent; border: 0; border-radius: 6px; color: inherit; font: inherit; min-height: 34px; padding: 6px 10px; text-align: left; width: 100%; }
+.side button[aria-pressed="true"] { background: light-dark(#e8f1ff, #243044); color: light-dark(#0b57d0, #9ec1ff); }
+main { min-width: 0; padding: 20px 24px 40px; }
+section[hidden], .panel[hidden], #report-detail[hidden], #report-list[hidden] { display: none; }
+h1 { font-size: 20px; font-weight: 500; margin: 0 0 12px; }
+h2 { font-size: 15px; font-weight: 500; margin: 16px 0 8px; }
+.note { color: light-dark(#3e4752, #c5ccd4); margin: 8px 0; }
+.stats { display: grid; gap: 8px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.stats div { background: light-dark(#fff, #23262c); display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; }
+.stats span { color: light-dark(#3e4752, #c5ccd4); }
+.stats strong { font-size: 18px; font-variant-numeric: tabular-nums; font-weight: 500; }
+table { background: light-dark(#fff, #23262c); border-collapse: collapse; width: 100%; }
+th, td { border-bottom: 1px solid light-dark(#e6e8ec, #343841); padding: 8px 10px; text-align: left; vertical-align: top; }
+th { font-weight: 500; }
+.num { font-variant-numeric: tabular-nums; text-align: right; }
+.ops { white-space: nowrap; }
+.tabs { display: flex; gap: 0; border-bottom: 1px solid light-dark(#e6e8ec, #343841); margin: 12px 0; }
+.tab, .rtab { background: transparent; border: 0; border-bottom: 2px solid transparent; color: inherit; font: inherit; min-height: 36px; padding: 8px 14px; }
+.tab[aria-pressed="true"], .rtab[aria-pressed="true"] { border-bottom-color: light-dark(#0b57d0, #9ec1ff); color: light-dark(#0b57d0, #9ec1ff); }
+.panel { display: flex; flex-direction: column; gap: 8px; }
+.fields { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.wide { grid-column: 1 / -1; }
+label, .pick { display: flex; flex-direction: column; gap: 4px; }
+.line { max-width: 360px; margin-bottom: 8px; }
+.pick { align-items: center; flex-direction: row; gap: 8px; min-height: 32px; }
+input, select { background: light-dark(#fff, #16181c); border: 1px solid light-dark(#c8ced6, #4a5160); border-radius: 4px; color: inherit; font: inherit; min-height: 32px; padding: 4px 8px; width: 100%; }
+.actions, .tune { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin-top: 12px; }
+.tune label { min-width: 220px; }
+button.primary, button.ghost, button.link { font: inherit; }
+button.primary { background: light-dark(#0b57d0, #9ec1ff); border: 0; border-radius: 4px; color: light-dark(#fff, #102033); min-height: 32px; padding: 6px 14px; }
+button.ghost { background: transparent; border: 1px solid light-dark(#c8ced6, #4a5160); border-radius: 4px; color: inherit; min-height: 32px; padding: 6px 14px; }
+button.link { background: transparent; border: 0; color: light-dark(#0b57d0, #9ec1ff); padding: 0 8px 0 0; }
+button:disabled { color: light-dark(#6b7380, #8b939e); }
+form { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.error { color: light-dark(#8f1d1d, #f0b4b4); margin: 0; }
+.ok { color: light-dark(#0f5c3a, #9ddec0); margin: 0; }
+@media (max-width: 800px) {
+  .shell { grid-template-columns: 168px minmax(0, 1fr); }
+  .fields, .stats { grid-template-columns: 1fr 1fr; }
 }
-#perf-proto .shell {
-  background: light-dark(#f3f4f6, #17191d);
-  display: grid;
-  grid-template-columns: 188px minmax(0, 1fr);
-  min-height: 100vh;
-}
-#perf-proto .side {
-  background: light-dark(#ffffff, #25282e);
-  border-right: 1px solid light-dark(#e2e5ea, #3a3f48);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 16px 12px;
-}
-#perf-proto .brand {
-  font-weight: 500;
-  padding: 0 8px;
-}
-#perf-proto .nav {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-#perf-proto .nav-btn {
-  background: transparent;
-  border: 0;
-  border-radius: 6px;
-  color: inherit;
-  font: inherit;
-  min-height: 36px;
-  padding: 6px 10px;
-  text-align: left;
-  width: 100%;
-}
-#perf-proto .nav-btn[aria-pressed="true"] {
-  background: light-dark(#e7eef8, #2c3a4e);
-}
-#perf-proto .main {
-  min-width: 0;
-  padding: 20px;
-}
-#perf-proto .screen[hidden] {
-  display: none;
-}
-#perf-proto h2, #perf-proto h3 {
-  font-size: 16px;
-  font-weight: 500;
-  margin: 0;
-}
-#perf-proto .screen {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-#perf-proto .note {
-  color: light-dark(#3e4752, #c5ccd4);
-  margin: 0;
-}
-#perf-proto .grid {
-  background: light-dark(#ffffff, #25282e);
-  border-collapse: collapse;
-  width: 100%;
-}
-#perf-proto .grid caption {
-  caption-side: top;
-  font-weight: 500;
-  padding: 0 0 8px;
-  text-align: left;
-}
-#perf-proto .grid th, #perf-proto .grid td {
-  border-bottom: 1px solid light-dark(#e2e5ea, #3a3f48);
-  padding: 8px 10px;
-  text-align: left;
-  vertical-align: top;
-}
-#perf-proto .grid th {
-  font-weight: 500;
-}
-#perf-proto .num {
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-#perf-proto .form {
-  background: light-dark(#ffffff, #25282e);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-}
-#perf-proto .fields {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-#perf-proto .wide {
-  grid-column: 1 / -1;
-}
-#perf-proto label, #perf-proto .pick {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-#perf-proto .pick {
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  min-height: 32px;
-}
-#perf-proto fieldset {
-  border: 1px solid light-dark(#e2e5ea, #3a3f48);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 0;
-  padding: 8px 10px;
-}
-#perf-proto legend {
-  padding: 0 4px;
-}
-#perf-proto input, #perf-proto select {
-  background: light-dark(#ffffff, #17191d);
-  border: 1px solid light-dark(#c8ced6, #4a5160);
-  border-radius: 4px;
-  color: inherit;
-  font: inherit;
-  min-height: 32px;
-  padding: 4px 8px;
-  width: 100%;
-}
-#perf-proto button.primary, #perf-proto button.text-btn {
-  font: inherit;
-  min-height: 32px;
-}
-#perf-proto button.primary {
-  align-self: flex-start;
-  background: light-dark(#1d4f91, #8eb4e8);
-  border: 0;
-  border-radius: 4px;
-  color: light-dark(#ffffff, #102033);
-  padding: 6px 12px;
-}
-#perf-proto button.text-btn {
-  background: transparent;
-  border: 0;
-  color: light-dark(#1d4f91, #8eb4e8);
-  padding: 0;
-}
-#perf-proto button:disabled {
-  color: light-dark(#6b7380, #8b939e);
-}
-#perf-proto .error, #perf-proto .ok {
-  margin: 0;
-}
-#perf-proto .error {
-  color: light-dark(#8f1d1d, #f0b4b4);
-}
-#perf-proto .ok {
-  color: light-dark(#0f5c3a, #9ddec0);
-}
-#perf-proto .metrics {
-  display: grid;
-  gap: 8px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-#perf-proto .metrics div {
-  background: light-dark(#ffffff, #25282e);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px;
-}
-#perf-proto .metrics span {
-  color: light-dark(#3e4752, #c5ccd4);
-}
-#perf-proto .metrics strong {
-  font-size: 20px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 500;
-}
-#perf-proto .verdict {
-  font-size: 20px;
-  font-weight: 500;
-  margin: 0;
-}
-#perf-proto .verdict.fail {
-  color: light-dark(#8f1d1d, #f0b4b4);
-}
-#perf-proto .mono {
-  font-family: ui-monospace, monospace;
-}
-@media (max-width: 640px) {
-  #perf-proto .fields, #perf-proto .metrics {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-@media (max-width: 380px) {
-  #perf-proto .fields, #perf-proto .metrics {
-    grid-template-columns: 1fr;
-  }
+@media (max-width: 560px) {
+  .fields, .stats { grid-template-columns: 1fr; }
 }
 </style>
-
 </body>
 </html>
